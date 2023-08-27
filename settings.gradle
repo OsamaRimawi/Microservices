@@ -1,0 +1,4 @@
+rootProject.name = 'Parent'
+include 'OrderMicroservice'
+include 'InventoryMicroservice'
+include 'ProductMicroservice'

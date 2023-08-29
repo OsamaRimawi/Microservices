@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
@@ -11,6 +12,22 @@
             <option value="$PROJECT_DIR$/InventoryMicroservice" />
             <option value="$PROJECT_DIR$/OrderMicroservice" />
             <option value="$PROJECT_DIR$/ProductMicroservice" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/APIGateway" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/APIGateway" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/ServerDiscovery" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/ServerDiscovery" />
           </set>
         </option>
       </GradleProjectSettings>

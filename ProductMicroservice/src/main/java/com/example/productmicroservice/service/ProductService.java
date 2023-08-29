@@ -3,15 +3,15 @@ package com.example.productmicroservice.service;
 
 import com.example.productmicroservice.DTO.ProductDTO;
 import com.example.productmicroservice.mapper.ProductDTOMapper;
-import com.example.productmicroservice.model.Product;
 import com.example.productmicroservice.model.Category;
-
+import com.example.productmicroservice.model.Product;
 import com.example.productmicroservice.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,14 +19,16 @@ import java.util.stream.Collectors;
 @Service
 public class ProductService {
     private final ProductRepository productRepository;
+    private final WebClient.Builder webClientBuilder;
     //private final InventoryRepository inventoryRepository;
 
 
     private final ProductDTOMapper productDTOMapper;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, ProductDTOMapper productDTOMapper) {
+    public ProductService(ProductRepository productRepository, WebClient.Builder webClientBuilder, ProductDTOMapper productDTOMapper) {
         this.productRepository = productRepository;
+        this.webClientBuilder = webClientBuilder;
         this.productDTOMapper = productDTOMapper;
 
     }
@@ -35,8 +37,13 @@ public class ProductService {
         List<Product> productList = productRepository.findAll();
         return productList.stream().map(product -> {
             ProductDTO productDTO = productDTOMapper.productToProductDTO(product);
-           // Integer quantity = (inventoryRepository.findByProductName(product.getName())).getQuantity();
-            //productDTO.setQuantity(quantity);
+            Integer quantity = webClientBuilder.build().get()
+                    .uri("http://inventory-microservice/api/v1.0/inventory",
+                            uriBuilder -> uriBuilder.queryParam("productName", product.getName()).build())
+                    .retrieve()
+                    .bodyToMono(Integer.class)
+                    .block();
+            productDTO.setQuantity(quantity);
             return productDTO;
         }).collect(Collectors.toList());
     }
@@ -49,8 +56,13 @@ public class ProductService {
         Category realCategory = Category.valueOf(category);
         Product product = productRepository.findByNameAndCategory(name, realCategory);
         ProductDTO productDTO = productDTOMapper.productToProductDTO(product);
-//        Integer quantity = (inventoryRepository.findByProductName(product.getName())).getQuantity();
-//        productDTO.setQuantity(quantity);
+        Integer quantity = webClientBuilder.build().get()
+                .uri("http://inventory-microservice/api/v1.0/inventory",
+                        uriBuilder -> uriBuilder.queryParam("productName", product.getName()).build())
+                .retrieve()
+                .bodyToMono(Integer.class)
+                .block();
+        productDTO.setQuantity(quantity);
         return productDTO;
     }
 
@@ -80,5 +92,9 @@ public class ProductService {
         productRepository.deleteProductByName(name);
 //        inventoryRepository.deleteByProductName(name);
         return new ResponseEntity<>("success", HttpStatus.NO_CONTENT);
+    }
+
+    public boolean doesProductExist(String name) {
+        return productRepository.existsByName(name);
     }
 }

@@ -83,4 +83,15 @@ public class ProductController {
         return productService.deleteProductByName(name);
     }
 
+    /**
+     * Performs Check if exist  operation .
+     *
+     * @param name The Product DTO Json
+     * @return boolean
+     */
+    @GetMapping("/check")
+    public boolean doesProductExist(
+            @RequestParam String name) {
+        return productService.doesProductExist(name);
+    }
 }

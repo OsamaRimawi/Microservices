@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,7 +24,8 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderLineItemsRepository orderLineItemsRepository;
-    //private final ProductRepository productRepository;
+    private final WebClient.Builder webClientBuilder;
+
 
 
     private final OrderDTOMapper orderDTOMapper;
@@ -31,9 +33,10 @@ public class OrderService {
 
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, OrderLineItemsRepository orderLineItemsRepository, OrderDTOMapper orderDTOMapper, OrderLineItemsMapper orderLineItemsDTOMapper) {
+    public OrderService(OrderRepository orderRepository, OrderLineItemsRepository orderLineItemsRepository, WebClient.Builder webClientBuilder, OrderDTOMapper orderDTOMapper, OrderLineItemsMapper orderLineItemsDTOMapper) {
         this.orderRepository = orderRepository;
         this.orderLineItemsRepository = orderLineItemsRepository;
+        this.webClientBuilder = webClientBuilder;
         this.orderDTOMapper = orderDTOMapper;
         this.orderLineItemsDTOMapper = orderLineItemsDTOMapper;
     }
@@ -86,8 +89,16 @@ public class OrderService {
                 .map(orderLineItemsDTO -> {
                     OrderLineItems orderLineItems = orderLineItemsDTOMapper.orderLineItemsDTOToOrderLineItems(orderLineItemsDTO);
                     orderLineItems.setOrder(order);
-//                    if (!productRepository.existsByName(orderLineItems.getProductName()))
-//                        throw new IllegalArgumentException("Invaild Product name");
+                    boolean doesProductExist = webClientBuilder.build().get()
+                            .uri("http://product-microservice/api/v1.0/product/check",
+                                    uriBuilder -> uriBuilder.queryParam("name", orderLineItems.getProductName()).build())
+                            .retrieve()
+                            .bodyToMono(Boolean.class)
+                            .block();
+
+                    if (!doesProductExist) {
+                        throw new IllegalArgumentException("Invaild Product name");
+                    }
                     return orderLineItems;
                 })
                 .collect(Collectors.toList());
@@ -107,8 +118,15 @@ public class OrderService {
                 .map(orderLineItemsDTO -> {
                     OrderLineItems orderLineItems = orderLineItemsDTOMapper.orderLineItemsDTOToOrderLineItems(orderLineItemsDTO);
                     orderLineItems.setOrder(existingOrder);
-//                    if (!productRepository.existsByName(orderLineItems.getProductName()))
-//                        throw new IllegalArgumentException("Invaild Product name");
+                    boolean doesProductExist = webClientBuilder.build().get()
+                            .uri("http://product-microservice/api/v1.0/product/check",
+                                    uriBuilder -> uriBuilder.queryParam("name", orderLineItems.getProductName()).build())
+                            .retrieve()
+                            .bodyToMono(Boolean.class)
+                            .block();
+
+                    if (!doesProductExist)
+                        throw new IllegalArgumentException("Invaild Product name");
                     return orderLineItems;
                 })
                 .collect(Collectors.toList());

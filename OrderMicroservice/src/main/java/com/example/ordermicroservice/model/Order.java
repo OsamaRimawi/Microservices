@@ -20,6 +20,12 @@ public class Order {
     @Column(name = "orderNumber", nullable = false, unique = true)
     private String orderNumber;
 
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phoneNumber")
+    private String phoneNumber;
+
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderLineItems> orderLineItems = new ArrayList<>();

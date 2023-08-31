@@ -26,7 +26,6 @@ public class OrderService {
     private final OrderLineItemsRepository orderLineItemsRepository;
     private final WebClient.Builder webClientBuilder;
 
-    //private final ProductRepository productRepository;
 
 
     private final OrderDTOMapper orderDTOMapper;

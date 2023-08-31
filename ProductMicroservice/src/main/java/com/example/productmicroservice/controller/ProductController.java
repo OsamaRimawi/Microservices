@@ -3,8 +3,8 @@ package com.example.productmicroservice.controller;
 
 import com.example.productmicroservice.DTO.ProductDTO;
 import com.example.productmicroservice.service.ProductService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.swagger.v3.oas.annotations.Operation;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +37,7 @@ public class ProductController {
             summary = "Get all products",
             description = "Retrieves a list of all products available in the database."
     )
+    @CircuitBreaker(name = "inventory")
     public List<ProductDTO> getAllProducts() {
         return productService.getAll();
     }
@@ -53,6 +54,7 @@ public class ProductController {
             summary = "Get product by name and category",
             description = "Retrieve a product from the database based on its name and category."
     )
+    @CircuitBreaker(name = "inventory")
     public ProductDTO getProductByNameAndCategory(
             @RequestParam String name,
             @RequestParam String category) {
@@ -70,6 +72,7 @@ public class ProductController {
             summary = "Add a new product",
             description = "Add a new product to the database."
     )
+    @CircuitBreaker(name = "inventory")
     public ResponseEntity<String> addOne(@RequestBody ProductDTO productDTO) {
         return productService.addProduct(productDTO);
     }
@@ -85,6 +88,7 @@ public class ProductController {
             summary = "Update a product",
             description = "Update an existing product in the database."
     )
+    @CircuitBreaker(name = "inventory")
     public ResponseEntity<String> updateProduct(@RequestBody ProductDTO productDTO) {
         return productService.updateProduct(productDTO.getName(), productDTO);
     }
@@ -100,6 +104,7 @@ public class ProductController {
             summary = "Delete a product by name",
             description = "Delete a product from the database based on its name."
     )
+    @CircuitBreaker(name = "inventory")
     public ResponseEntity<String> deleteProduct(
             @RequestParam String name) {
         return productService.deleteProductByName(name);
@@ -120,4 +125,5 @@ public class ProductController {
             @RequestParam String name) {
         return productService.doesProductExist(name);
     }
+
 }

@@ -1,6 +1,8 @@
 package com.example.productmicroservice.service;
 
 
+import brave.Span;
+import brave.Tracer;
 import com.example.productmicroservice.DTO.ProductDTO;
 import com.example.productmicroservice.mapper.ProductDTOMapper;
 import com.example.productmicroservice.model.Category;
@@ -25,26 +27,34 @@ public class ProductService {
 
 
     private final ProductDTOMapper productDTOMapper;
+    private final Tracer tracer;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, WebClient.Builder webClientBuilder, ProductDTOMapper productDTOMapper) {
+    public ProductService(ProductRepository productRepository, WebClient.Builder webClientBuilder, ProductDTOMapper productDTOMapper, Tracer tracer) {
         this.productRepository = productRepository;
         this.webClientBuilder = webClientBuilder;
         this.productDTOMapper = productDTOMapper;
-
+        this.tracer = tracer;
     }
 
     public List<ProductDTO> getAll() {
         List<Product> productList = productRepository.findAll();
         return productList.stream().map(product -> {
             ProductDTO productDTO = productDTOMapper.productToProductDTO(product);
-            Integer quantity = webClientBuilder.build().get()
-                    .uri("http://inventory-microservice/api/v1.0/inventory/quantity",
-                            uriBuilder -> uriBuilder.queryParam("productName", product.getName()).build())
-                    .retrieve()
-                    .bodyToMono(Integer.class)
-                    .block();
-            productDTO.setQuantity(quantity);
+            Span inventoryServiceGetQuantitySpan = tracer.nextSpan().name("InventoryServiceGetQuantity");
+            try (Tracer.SpanInScope spanInScope = tracer.withSpanInScope(inventoryServiceGetQuantitySpan.start())) {
+                Integer quantity = webClientBuilder.build().get()
+                        .uri("http://inventory-microservice/api/v1.0/inventory/quantity",
+                                uriBuilder -> uriBuilder.queryParam("productName", product.getName()).build())
+                        .retrieve()
+                        .bodyToMono(Integer.class)
+                        .block();
+                productDTO.setQuantity(quantity);
+
+            } finally {
+                inventoryServiceGetQuantitySpan.finish();
+            }
+
             return productDTO;
         }).collect(Collectors.toList());
     }

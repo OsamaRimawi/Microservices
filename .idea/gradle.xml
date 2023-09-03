@@ -32,14 +32,6 @@
         </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
-        <option name="externalProjectPath" value="$PROJECT_DIR$/PhoneNotificationService" />
-        <option name="modules">
-          <set>
-            <option value="$PROJECT_DIR$/PhoneNotificationService" />
-          </set>
-        </option>
-      </GradleProjectSettings>
-      <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/ServerDiscovery" />
         <option name="modules">
           <set>

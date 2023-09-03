@@ -25,7 +25,8 @@ ext {
     set('springCloudVersion', "2022.0.4")
 }
 
-dependencies {
+dependencies{
+    implementation 'com.twilio.sdk:twilio:8.23.0'
     implementation('org.springframework.cloud:spring-cloud-starter-bootstrap')
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

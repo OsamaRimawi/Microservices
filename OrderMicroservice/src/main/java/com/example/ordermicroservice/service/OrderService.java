@@ -3,6 +3,7 @@ package com.example.ordermicroservice.service;
 
 import com.example.ordermicroservice.DTO.OrderDTO;
 import com.example.ordermicroservice.DTO.OrderLineItemsDTO;
+import com.example.ordermicroservice.event.OrderCreatedEvent;
 import com.example.ordermicroservice.mapper.OrderDTOMapper;
 import com.example.ordermicroservice.mapper.OrderLineItemsMapper;
 import com.example.ordermicroservice.model.Order;
@@ -13,6 +14,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -25,6 +27,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderLineItemsRepository orderLineItemsRepository;
     private final WebClient.Builder webClientBuilder;
+    private final KafkaTemplate<String,OrderCreatedEvent> kafkaTemplate;
 
 
 
@@ -33,10 +36,11 @@ public class OrderService {
 
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, OrderLineItemsRepository orderLineItemsRepository, WebClient.Builder webClientBuilder, OrderDTOMapper orderDTOMapper, OrderLineItemsMapper orderLineItemsDTOMapper) {
+    public OrderService(OrderRepository orderRepository, OrderLineItemsRepository orderLineItemsRepository, WebClient.Builder webClientBuilder, KafkaTemplate kafkaTemplate, OrderDTOMapper orderDTOMapper, OrderLineItemsMapper orderLineItemsDTOMapper) {
         this.orderRepository = orderRepository;
         this.orderLineItemsRepository = orderLineItemsRepository;
         this.webClientBuilder = webClientBuilder;
+        this.kafkaTemplate = kafkaTemplate;
         this.orderDTOMapper = orderDTOMapper;
         this.orderLineItemsDTOMapper = orderLineItemsDTOMapper;
     }
@@ -104,6 +108,9 @@ public class OrderService {
                 .collect(Collectors.toList());
         order.setOrderLineItems(orderLineItemsList);
         orderRepository.save(order);
+        kafkaTemplate.send("EmailNotificationTopic",new OrderCreatedEvent(order.getOrderNumber(), order.getEmail()));
+        kafkaTemplate.send("PhoneNotificationTopic",new OrderCreatedEvent(order.getOrderNumber(), order.getPhoneNumber()));
+
         return new ResponseEntity<>("success", HttpStatus.CREATED);
     }
 

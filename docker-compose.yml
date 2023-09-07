@@ -1,8 +1,56 @@
-version: '3'
+version: '3.8'
+
 services:
+
+  mysql-database:
+    container_name: mysql-database
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: products_database
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    expose:
+      - "3307"
+    restart: unless-stopped
+
+  ## Mongo Docker Compose Config
+  mongo:
+    container_name: mongo
+    image: mongo:7.0.1
+    restart: always
+    ports:
+      - "27017:27017"
+    expose:
+      - "27017"
+    volumes:
+      - ./mongo-data:/data/db
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:22.0.1
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    expose:
+      - "8080"
+    volumes:
+      - ./realms/:/opt/keycloak/data/import/
+
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
+    ports:
+      - "2181:2181"
+    expose:
+      - "2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -12,6 +60,8 @@ services:
     container_name: broker
     ports:
       - "9092:9092"
+    expose:
+      - "29092"
     depends_on:
       - zookeeper
     environment:
@@ -21,3 +71,176 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+
+
+  ## Zipkin
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+
+      ## Eureka Server
+  discovery-server:
+    image: server-discovery-image:latest
+    container_name: discovery-server
+    ports:
+      - "9004:9004"
+    expose:
+      - "9004"
+    environment:
+      - server.port=9004
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+
+    depends_on:
+      - zipkin
+
+  api-gateway:
+    image: apigateway-image:latest
+    container_name: api-gateway
+    ports:
+      - "9000:9000"
+    expose:
+      - "9000"
+    environment:
+      - server.port=9000
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - app.eureka-server=discovery-server
+      - spring.security.oauth2.client.provider.keycloak.issuer-uri=http://keycloak:8080/realms/onlineShoppingApplicationMicroservices
+      - spring.security.oauth2.resourceserver.jwt.issuer-uri= http://keycloak:8080/realms/onlineShoppingApplicationMicroservices
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
+    depends_on:
+      - zipkin
+      - discovery-server
+      - keycloak
+    restart: unless-stopped
+
+
+  ## Product-Service Docker Compose Config
+  product-service:
+    container_name: product-service
+    image: product-image:latest
+    ports:
+      - "9002:9002"
+    expose:
+      - "9002"
+    environment:
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - server.port=9002
+      - spring.datasource.url=jdbc:mysql://mysql-database:3306/products_database?allowPublicKeyRetrieval=true&useSSL=false
+      - spring.datasource.username=root
+      - spring.datasource.password=root
+      - spring.jpa.hibernate.ddl-auto=update
+    depends_on:
+      - mysql-database
+      - discovery-server
+      - zipkin
+
+
+  ## Order-Service Docker Compose Config
+  order-service:
+    container_name: order-service
+    image: order-image:latest
+    ports:
+      - "9001:9001"
+    expose:
+      - "9001"
+    environment:
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - server.port=9001
+      - spring.datasource.url=jdbc:mysql://mysql-database:3306/products_database?allowPublicKeyRetrieval=true&useSSL=false
+      - spring.datasource.username=root
+      - spring.datasource.password=root
+      - spring.jpa.hibernate.ddl-auto=update
+      - spring.kafka.bootstrap-servers=broker:29092
+    depends_on:
+      - mysql-database
+      - broker
+      - zipkin
+      - discovery-server
+
+  ## Inventory-Service Docker Compose Config
+  inventory-service:
+    container_name: inventory-service
+    image: inventory-image:latest
+    ports:
+      - "9003:9003"
+    expose:
+      - "9003"
+    environment:
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - server.port=9003
+      - spring.data.mongodb.host=mongo
+      - spring.data.mongodb.port=27017
+      - spring.data.mongodb.database=online_shopping_application_database
+    depends_on:
+      - mongo
+      - discovery-server
+      - zipkin
+
+  ## Notification-Service Docker Compose Config
+  email-notification-service:
+    container_name: email-notification-service
+    image: email-notification-image:latest
+    ports:
+      - "9006:9006"
+    expose:
+      - "9006"
+    environment:
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - spring.kafka.bootstrap-servers=broker:29092
+      - server.port=9006
+
+    depends_on:
+      - zipkin
+      - broker
+      - discovery-server
+      - order-service
+
+  ## Notification-Service Docker Compose Config
+  phone-notification-service:
+    container_name: phone-notification-service
+    image: phone-notification-image:latest
+    ports:
+      - "9007:9007"
+    expose:
+      - "9007"
+    environment:
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - spring.kafka.bootstrap-servers=broker:29092
+      - server.port=9007
+    depends_on:
+      - zipkin
+      - broker
+      - discovery-server
+      - order-service

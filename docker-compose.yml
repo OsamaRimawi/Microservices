@@ -72,6 +72,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    restart: unless-stopped
+
 
 
 
@@ -199,6 +201,31 @@ services:
       - mongo
       - discovery-server
       - zipkin
+
+  ## User-Service Docker Compose Config
+  user-service:
+    container_name: user-service
+    image: user-image:latest
+    ports:
+      - "9005:9005"
+    expose:
+      - "9005"
+    environment:
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
+      - spring.zipkin.base-url=http//zipkin:9411/api/v2/spans
+      - SPRING_ZIPKIN_ENABLED=true
+      - management.tracing.sampling.probability=1.0
+      - eureka.client.serviceUrl.defaultZone=http://discovery-server:9004/eureka
+      - server.port=9005
+      - spring.datasource.url=jdbc:mysql://mysql-database:3306/products_database?allowPublicKeyRetrieval=true&useSSL=false
+      - spring.datasource.username=root
+      - spring.datasource.password=root
+      - spring.jpa.hibernate.ddl-auto=update
+    depends_on:
+      - mysql-database
+      - zipkin
+      - discovery-server
+
 
   ## Notification-Service Docker Compose Config
   email-notification-service:

@@ -9,9 +9,13 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/APIGateway" />
+            <option value="$PROJECT_DIR$/EmailNotificationService" />
             <option value="$PROJECT_DIR$/InventoryMicroservice" />
             <option value="$PROJECT_DIR$/OrderMicroservice" />
+            <option value="$PROJECT_DIR$/PhoneNotificationService" />
             <option value="$PROJECT_DIR$/ProductMicroservice" />
+            <option value="$PROJECT_DIR$/ServerDiscovery" />
           </set>
         </option>
       </GradleProjectSettings>

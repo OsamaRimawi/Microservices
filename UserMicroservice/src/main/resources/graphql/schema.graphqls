@@ -1,0 +1,25 @@
+type Query{
+    getAllUsers: [User]
+    getUserByName(userName: String!): User
+
+}
+type Mutation {
+    addUser(user : UserRequestDTO): User
+    updateUser(userName: String!, user: UserRequestDTO): User
+    deleteUser(userName: String!): String
+}
+
+input UserRequestDTO{
+    userName: String!
+    email: String!
+    phoneNumber: String!
+    address: String!
+}
+
+type User {
+    id: ID!
+    userName: String!
+    email: String!
+    phoneNumber: String!
+    address: String!
+}

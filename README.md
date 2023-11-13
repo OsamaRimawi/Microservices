@@ -25,7 +25,8 @@ This Spring Boot application simulates an online shopping platform using a micro
 
 The application follows a microservices architecture, allowing each service to run independently, communicate through APIs, and be deployed and scaled individually.
 
-![Microservices Architecture](docs/microservices_architecture.png)
+![Screenshot 2023-11-13 204306](https://github.com/OsamaRimawi/Microservices/assets/90480363/c92b27d7-24e9-47f8-8bf1-58e795a3b5d7)
+
 
 ## Getting Started
 

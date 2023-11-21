@@ -27,17 +27,3 @@ The application follows a microservices architecture, allowing each service to r
 
 ![Screenshot 2023-11-13 204306](https://github.com/OsamaRimawi/Microservices/assets/90480363/c92b27d7-24e9-47f8-8bf1-58e795a3b5d7)
 
-
-## Getting Started
-
-### Prerequisites
-
-- Java Development Kit (JDK) 8 or later
-- Docker and Docker Compose (optional for containerization)
-
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/your-username/online-shopping-microservices.git
